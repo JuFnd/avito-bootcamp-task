@@ -29,4 +29,4 @@ CREATE TABLE role (
 );
 
 
-INSERT INTO role(value) VALUES ('user'), ('admin');
+INSERT INTO role(value) VALUES ('user'), ('moderator');
