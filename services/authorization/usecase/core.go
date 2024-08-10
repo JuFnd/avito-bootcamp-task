@@ -1,14 +1,14 @@
 package usecase
 
 import (
-	"context"
-	"fmt"
-	"log/slog"
 	"bootcamp-task/pkg/models"
 	"bootcamp-task/pkg/util"
 	"bootcamp-task/pkg/variables"
 	"bootcamp-task/services/authorization/repository/profile"
 	"bootcamp-task/services/authorization/repository/session"
+	"context"
+	"fmt"
+	"log/slog"
 	"regexp"
 	"sync"
 	"time"

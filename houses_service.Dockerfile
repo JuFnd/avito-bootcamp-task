@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY ../.. .
 
-RUN go build -o posts ./cmd/posts/server.go
+RUN go build -o houses ./cmd/houses/main.go
 
 FROM ubuntu:latest
 
@@ -19,7 +19,7 @@ RUN service postgresql start && \
         psql -c "CREATE USER boss WITH superuser login password 'boss';" && \
         psql -c "ALTER ROLE boss WITH PASSWORD 'boss';" && \
         createdb -O boss houses_service && \
-        psql -d posts_service -f /opt/database/houses_service_migrations.sql
+        psql -d houses_service -f /opt/database/houses_service_migrations.sql
 
 VOLUME ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 
@@ -27,10 +27,10 @@ USER root
 
 WORKDIR /build
 COPY --from=builder /app/configs .
-COPY --from=builder /app/posts .
+COPY --from=builder /app/houses .
 
 COPY . .
 
 EXPOSE 8081
 
-CMD service postgresql start && ./posts
+CMD service postgresql start && ./houses

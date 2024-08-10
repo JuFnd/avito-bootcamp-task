@@ -17,7 +17,7 @@ type IRepository interface {
 	CreateHouse(ctx context.Context, address string, yearBuilt int64, developer string) (models.House, error)
 	GetHouseFlats(ctx context.Context, houseId int64, userRole string) ([]models.HouseFlat, error)
 	CreateFlat(number int64, price int64, rooms int64, houseId int64) (models.HouseFlat, error)
-	UpdateFlat(number int64, price int64, rooms int64, houseId int64) (models.HouseFlat, error)
+	UpdateFlat(number int64, price int64, rooms int64, houseId int64, status string) (models.HouseFlat, error)
 }
 
 type Core struct {
@@ -44,7 +44,6 @@ func GetCore(HousesRelConfig *variables.RelationalDataBaseConfig, grpcCfg *varia
 	}
 
 	HousesGrpcClient, err := GetClient(grpcCfg.Address + ":" + grpcCfg.Port)
-
 	if err != nil {
 		return nil, fmt.Errorf("grpc connect err: %w", err)
 	}
@@ -65,16 +64,9 @@ func (core *Core) CreateHouse(ctx context.Context, address string, yearBuilt int
 	return house, nil
 }
 
-func (core *Core) GetHouseFlats(ctx context.Context, houseId int64) ([]models.HouseFlat, error) {
-	var userId int64
+func (core *Core) GetHouseFlats(ctx context.Context, houseId int64, userId int64) ([]models.HouseFlat, error) {
 	var err error
 	var userRole string
-	if val := ctx.Value(variables.UserIDKey); val != nil {
-		userId, _ = val.(int64)
-	} else {
-		core.logger.Error(variables.UserIDNotFoundError, nil)
-		userRole = "user"
-	}
 
 	userRole, err = core.GetUserRole(ctx, userId)
 	if err != nil {
@@ -97,8 +89,8 @@ func (core *Core) CreateFlat(number int64, price int64, rooms int64, houseId int
 	return flat, nil
 }
 
-func (core *Core) UpdateFlat(number int64, price int64, rooms int64, houseId int64) (models.HouseFlat, error) {
-	flat, err := core.HousesRepository.UpdateFlat(number, price, rooms, houseId)
+func (core *Core) UpdateFlat(number int64, price int64, rooms int64, houseId int64, status string) (models.HouseFlat, error) {
+	flat, err := core.HousesRepository.UpdateFlat(number, price, rooms, houseId, status)
 	if err != nil {
 		core.logger.Error(variables.FlatUpdateError, err)
 		return models.HouseFlat{}, fmt.Errorf(variables.FlatUpdateError, err)

@@ -8,14 +8,9 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
-)
 
-type IRepository interface {
-	CreateHouse(ctx context.Context, address string, yearBuilt int64, developer string) (models.House, error)
-	GetHouseFlats(ctx context.Context, houseId int64, userRole string) ([]models.HouseFlat, error)
-	CreateFlat(number int64, price int64, rooms int64, houseId int64) (models.HouseFlat, error)
-	UpdateFlat(number int64, price int64, rooms int64, houseId int64) (models.HouseFlat, error)
-}
+	_ "github.com/jackc/pgx/stdlib"
+)
 
 type Repository struct {
 	db *sql.DB
@@ -145,11 +140,10 @@ func (repository *Repository) CreateFlat(number int64, price int64, rooms int64,
 	query := `
     INSERT INTO Apartment (apartment_number, price, rooms, house_id)
     VALUES ($1, $2, $3, $4)
-    RETURNING apartment_id, created_at;
+    RETURNING apartment_id;
 `
 	var apartmentID int
-	var createdAt time.Time
-	err := repository.db.QueryRow(query, number, price, rooms, houseId).Scan(&apartmentID, &createdAt)
+	err := repository.db.QueryRow(query, number, price, rooms, houseId).Scan(&apartmentID)
 	if err != nil {
 		return models.HouseFlat{}, err
 	}
@@ -162,16 +156,26 @@ func (repository *Repository) CreateFlat(number int64, price int64, rooms int64,
 	}, nil
 }
 
-func (repository *Repository) UpdateFlat(number int64, price int64, rooms int64, houseId int64) (models.HouseFlat, error) {
+func (repository *Repository) UpdateFlat(number int64, price int64, rooms int64, houseId int64, status string) (models.HouseFlat, error) {
 	query := `
     UPDATE Apartment
     SET apartment_number = $1, price = $2, rooms = $3
     WHERE house_id = $4 AND apartment_number = $5
-    RETURNING apartment_id, updated_at;
-`
+    RETURNING apartment_id;
+    `
 	var apartmentID int
-	var updatedAt time.Time
-	err := repository.db.QueryRow(query, number, price, rooms, houseId, number).Scan(&apartmentID, &updatedAt)
+	err := repository.db.QueryRow(query, number, price, rooms, houseId, number).Scan(&apartmentID)
+	if err != nil {
+		return models.HouseFlat{}, err
+	}
+
+	// Update the status in the separate status table
+	statusQuery := `
+    UPDATE Apartment_House
+    SET status = $1
+    WHERE apartment_id = $2;
+    `
+	_, err = repository.db.Exec(statusQuery, status, apartmentID)
 	if err != nil {
 		return models.HouseFlat{}, err
 	}

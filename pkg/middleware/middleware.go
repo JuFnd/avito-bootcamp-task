@@ -1,12 +1,12 @@
 package middleware
 
 import (
+	"bootcamp-task/pkg/util"
+	"bootcamp-task/pkg/variables"
 	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"bootcamp-task/pkg/util"
-	"bootcamp-task/pkg/variables"
 )
 
 type ICore interface {

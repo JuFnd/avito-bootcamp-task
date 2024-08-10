@@ -56,8 +56,8 @@ func GetAuthorizationApi(authCore *usecase.Core, authLogger *slog.Logger) *API {
 	logoutMux.Handle("/", signHandler)
 	logoutMux.HandleFunc("/logout", api.LogoutSession)
 
-	authHandler := middleware.AuthorizationMiddleware(logoutMux, api.core, api.logger)
-	authHandler = middleware.MethodMiddleware(authHandler, variables.MethodPost, api.logger)
+	//authHandler := middleware.AuthorizationMiddleware(logoutMux, api.core, api.logger)
+	authHandler := middleware.MethodMiddleware(logoutMux, variables.MethodPost, api.logger)
 	authHandler = middleware.PanicMiddleware(authHandler, api.logger)
 
 	siteMux := http.NewServeMux()
