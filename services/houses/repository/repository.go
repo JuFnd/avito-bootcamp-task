@@ -169,7 +169,6 @@ func (repository *Repository) UpdateFlat(number int64, price int64, rooms int64,
 		return models.HouseFlat{}, err
 	}
 
-	// Update the status in the separate status table
 	statusQuery := `
     UPDATE Apartment_House
     SET status = $1
