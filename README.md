@@ -22,6 +22,10 @@ docker-compose up
         - БД Кэширования: Redis
      
    - Квартиры:
+        - Схема БД:
+          ![изображение](https://github.com/user-attachments/assets/d209f8d0-fa68-47fe-9ae9-fb3ce51815c3)
+          
+        - СУБД: Postgresql
         
 
    - Примеры запросов:
@@ -33,3 +37,47 @@ docker-compose up
 
      - Выход из аккаунта
        ![изображение](https://github.com/JuFnd/ozon-task/assets/109366718/29320114-ac6d-4b80-a09b-f8e161a3d45a)
+
+     - Получение объявлений(юзер/модератор)
+       ![изображение](https://github.com/user-attachments/assets/c4461139-b4cf-4ce4-8225-16f6eb1e5d09)
+       ![изображение](https://github.com/user-attachments/assets/4a5942bd-aff2-4a13-adf9-dd4ead87704a)
+
+     - Обновление квартиры
+       ![изображение](https://github.com/user-attachments/assets/c5245052-7a4e-4827-a813-5387ca3f65ab)
+
+
+     - Создание квартиры
+       ![изображение](https://github.com/user-attachments/assets/6932300c-d2f8-4ee0-b170-edf1eff2b689)
+
+Запросы:
+
+      localhost:8081/api/v1/house/1 GET
+      localhost:8081/api/v1/house/2 GET
+      localhost:8081/api/v1/house/3 GET
+
+      localhost:8080/login localhost:8080/register POST
+      {
+          "login":"test",
+          "password":"test"
+      }
+
+      localhost:8081/api/v1/flat/update POST - Необходимы права модератора
+      { 
+        "apartment_number": 102,
+        "price": 200000,
+        "rooms": 5,
+        "house_id": 1,
+        "address": "123 Main St",
+        "status": "approved"
+      }
+
+      localhost:8081/api/v1/flat/create
+      { 
+        "apartment_number": 104,
+        "price": 200000,
+        "rooms": 5,
+        "house_id": 1,
+        "address": "123 Main St"
+      }
+
+
