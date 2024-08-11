@@ -12,9 +12,9 @@ import (
 
 type ICore interface {
 	CreateHouse(ctx context.Context, address string, yearBuilt int64, developer string) (models.House, error)
-	GetHouseFlats(ctx context.Context, houseId int64) ([]models.HouseFlat, error)
+	GetHouseFlats(ctx context.Context, houseId int64, userId int64) ([]models.HouseFlat, error)
 	CreateFlat(number int64, price int64, rooms int64, houseId int64) (models.HouseFlat, error)
-	UpdateFlat(number int64, price int64, rooms int64, houseId int64) (models.HouseFlat, error)
+	UpdateFlat(number int64, price int64, rooms int64, houseId int64, status string) (models.HouseFlat, error)
 	GetUserRole(ctx context.Context, id int64) (string, error)
 	GetUserId(ctx context.Context, sid string) (int64, error)
 }
@@ -32,7 +32,7 @@ func GetHousesApi(core ICore, logger *slog.Logger) *API {
 		core:   core,
 	}
 
-	api.mux.HandleFunc("/api/v1/house/create", api.createHouse)
+	api.mux.HandleFunc("/house/create", api.createHouse)
 	api.mux.HandleFunc("/api/v1/flat/update", api.updateFlat)
 	createHouseHandler := middleware.PermissionsMiddleware(api.mux, api.core, variables.ModeratorRole, api.logger)
 	createHouseHandler = middleware.AuthorizationMiddleware(createHouseHandler, api.core, api.logger)
@@ -88,13 +88,24 @@ func (api *API) createHouse(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) getHouse(w http.ResponseWriter, r *http.Request) {
+	var userId int64
+	session, err := r.Cookie(variables.SessionCookieName)
+	if err != nil {
+		userId = 0
+	}
+
+	userId, err = api.core.GetUserId(r.Context(), session.Value)
+	if err != nil {
+		userId = 0
+	}
+
 	houseId, err := util.GetHouseIdFromRequest(r.URL.Path)
 	if err != nil {
 		util.SendResponse(w, r, http.StatusBadRequest, nil, variables.StatusBadRequestError, err, api.logger)
 		return
 	}
 
-	flats, err := api.core.GetHouseFlats(r.Context(), houseId)
+	flats, err := api.core.GetHouseFlats(r.Context(), houseId, userId)
 	if err != nil {
 		util.SendResponse(w, r, http.StatusInternalServerError, nil, variables.StatusInternalServerError, err, api.logger)
 		return
@@ -111,13 +122,7 @@ func (api *API) createFlat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	houseId, err := util.GetHouseIdFromRequest(r.URL.Path)
-	if err != nil {
-		util.SendResponse(w, r, http.StatusBadRequest, nil, variables.StatusBadRequestError, err, api.logger)
-		return
-	}
-
-	flat, err := api.core.CreateFlat(int64(flatRequest.ApartmentNumber), int64(flatRequest.Price), int64(flatRequest.Rooms), houseId)
+	flat, err := api.core.CreateFlat(int64(flatRequest.ApartmentNumber), int64(flatRequest.Price), int64(flatRequest.Rooms), int64(flatRequest.HouseID))
 	if err != nil {
 		util.SendResponse(w, r, http.StatusInternalServerError, nil, variables.StatusInternalServerError, err, api.logger)
 		return
@@ -134,13 +139,7 @@ func (api *API) updateFlat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	houseId, err := util.GetHouseIdFromRequest(r.URL.Path)
-	if err != nil {
-		util.SendResponse(w, r, http.StatusBadRequest, nil, variables.StatusBadRequestError, err, api.logger)
-		return
-	}
-
-	flat, err := api.core.UpdateFlat(int64(flatRequest.ApartmentNumber), int64(flatRequest.Price), int64(flatRequest.Rooms), houseId)
+	flat, err := api.core.UpdateFlat(int64(flatRequest.ApartmentNumber), int64(flatRequest.Price), int64(flatRequest.Rooms), int64(flatRequest.HouseID), flatRequest.Status)
 	if err != nil {
 		util.SendResponse(w, r, http.StatusInternalServerError, nil, variables.StatusInternalServerError, err, api.logger)
 		return

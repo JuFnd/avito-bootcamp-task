@@ -137,53 +137,114 @@ func (repository *Repository) GetHouseFlats(ctx context.Context, houseId int64, 
 }
 
 func (repository *Repository) CreateFlat(number int64, price int64, rooms int64, houseId int64) (models.HouseFlat, error) {
-	query := `
-    INSERT INTO Apartment (apartment_number, price, rooms, house_id)
-    VALUES ($1, $2, $3, $4)
-    RETURNING apartment_id;
-`
-	var apartmentID int
-	err := repository.db.QueryRow(query, number, price, rooms, houseId).Scan(&apartmentID)
+	var houseFlat models.HouseFlat
+
+	var exists bool
+	err := repository.db.QueryRow("SELECT EXISTS(SELECT 1 FROM House WHERE house_id = $1)", houseId).Scan(&exists)
 	if err != nil {
-		return models.HouseFlat{}, err
+		return houseFlat, err
 	}
-	return models.HouseFlat{
-		ApartmentID:     apartmentID,
-		ApartmentNumber: int(number),
-		Price:           int(price),
-		Rooms:           int(rooms),
-		HouseID:         int(houseId),
-	}, nil
+	if !exists {
+		return houseFlat, fmt.Errorf("house with ID %d does not exist", houseId)
+	}
+
+	tx, err := repository.db.Begin()
+	if err != nil {
+		return houseFlat, err
+	}
+
+	insertApartmentQuery := `
+        INSERT INTO Apartment (apartment_number, price, rooms, house_id)
+        VALUES ($1, $2, $3, $4)
+        RETURNING apartment_id, apartment_number, price, rooms, house_id
+    `
+	err = tx.QueryRow(insertApartmentQuery, number, price, rooms, houseId).Scan(
+		&houseFlat.ApartmentID, &houseFlat.ApartmentNumber, &houseFlat.Price, &houseFlat.Rooms, &houseFlat.HouseID,
+	)
+	if err != nil {
+		tx.Rollback()
+		return houseFlat, err
+	}
+
+	insertApartmentHouseQuery := `
+        INSERT INTO Apartment_House (apartment_id, house_id)
+        VALUES ($1, $2)
+        RETURNING status
+    `
+	err = tx.QueryRow(insertApartmentHouseQuery, houseFlat.ApartmentID, houseFlat.HouseID).Scan(&houseFlat.Status)
+	if err != nil {
+		tx.Rollback()
+		return houseFlat, err
+	}
+
+	fetchHouseQuery := `
+        SELECT address
+        FROM House
+        WHERE house_id = $1
+    `
+	err = tx.QueryRow(fetchHouseQuery, houseFlat.HouseID).Scan(&houseFlat.Address)
+	if err != nil {
+		tx.Rollback()
+		return houseFlat, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return houseFlat, err
+	}
+
+	return houseFlat, nil
 }
 
 func (repository *Repository) UpdateFlat(number int64, price int64, rooms int64, houseId int64, status string) (models.HouseFlat, error) {
-	query := `
-    UPDATE Apartment
-    SET apartment_number = $1, price = $2, rooms = $3
-    WHERE house_id = $4 AND apartment_number = $5
-    RETURNING apartment_id;
-    `
-	var apartmentID int
-	err := repository.db.QueryRow(query, number, price, rooms, houseId, number).Scan(&apartmentID)
+	var houseFlat models.HouseFlat
+
+	tx, err := repository.db.Begin()
 	if err != nil {
-		return models.HouseFlat{}, err
+		return houseFlat, err
 	}
 
-	statusQuery := `
-    UPDATE Apartment_House
-    SET status = $1
-    WHERE apartment_id = $2;
+	updateApartmentQuery := `
+        UPDATE Apartment
+        SET price = $1, rooms = $2, house_id = $3
+        WHERE apartment_number = $4
+        RETURNING apartment_id, apartment_number, price, rooms, house_id
     `
-	_, err = repository.db.Exec(statusQuery, status, apartmentID)
+	err = tx.QueryRow(updateApartmentQuery, price, rooms, houseId, number).Scan(
+		&houseFlat.ApartmentID, &houseFlat.ApartmentNumber, &houseFlat.Price, &houseFlat.Rooms, &houseFlat.HouseID,
+	)
 	if err != nil {
-		return models.HouseFlat{}, err
+		tx.Rollback()
+		return houseFlat, err
 	}
 
-	return models.HouseFlat{
-		ApartmentID:     apartmentID,
-		ApartmentNumber: int(number),
-		Price:           int(price),
-		Rooms:           int(rooms),
-		HouseID:         int(houseId),
-	}, nil
+	updateApartmentHouseQuery := `
+        UPDATE Apartment_House
+        SET status = $1
+        WHERE apartment_id = $2 AND house_id = $3
+        RETURNING status
+    `
+	err = tx.QueryRow(updateApartmentHouseQuery, status, houseFlat.ApartmentID, houseFlat.HouseID).Scan(&houseFlat.Status)
+	if err != nil {
+		tx.Rollback()
+		return houseFlat, err
+	}
+
+	fetchHouseQuery := `
+        SELECT address
+        FROM House
+        WHERE house_id = $1
+    `
+	err = tx.QueryRow(fetchHouseQuery, houseFlat.HouseID).Scan(&houseFlat.Address)
+	if err != nil {
+		tx.Rollback()
+		return houseFlat, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return houseFlat, err
+	}
+
+	return houseFlat, nil
 }
