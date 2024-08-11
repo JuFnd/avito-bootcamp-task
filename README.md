@@ -43,17 +43,17 @@ docker-compose up
        ![изображение](https://github.com/user-attachments/assets/4a5942bd-aff2-4a13-adf9-dd4ead87704a)
 
      - Обновление квартиры
-       ![изображение](https://github.com/user-attachments/assets/c5245052-7a4e-4827-a813-5387ca3f65ab)
-
+       ![изображение](https://github.com/user-attachments/assets/68d6e609-8421-41cc-83a8-55fad5301592)
 
      - Создание квартиры
-       ![изображение](https://github.com/user-attachments/assets/6932300c-d2f8-4ee0-b170-edf1eff2b689)
+       ![изображение](https://github.com/user-attachments/assets/9e2b6f7e-14e4-44ec-a8c4-b4b98026fd96)
+
 
 Запросы:
 
-      localhost:8081/api/v1/house/1 GET
-      localhost:8081/api/v1/house/2 GET
-      localhost:8081/api/v1/house/3 GET
+      localhost:8081/api/v1/house/1 POST
+      localhost:8081/api/v1/house/2 POST
+      localhost:8081/api/v1/house/3 POST
 
       localhost:8080/login localhost:8080/register POST
       {
@@ -62,22 +62,21 @@ docker-compose up
       }
 
       localhost:8081/api/v1/flat/update POST - Необходимы права модератора
-      { 
-        "apartment_number": 102,
-        "price": 200000,
-        "rooms": 5,
-        "house_id": 1,
-        "address": "123 Main St",
-        "status": "approved"
+      {
+          "apartment_number": 114,
+          "price": 500000,
+          "rooms": 4,
+          "house_id": 1,
+          "address": "123 Main St",
+          "status": "approved"
       }
 
       localhost:8081/api/v1/flat/create
-      { 
-        "apartment_number": 104,
-        "price": 200000,
-        "rooms": 5,
-        "house_id": 1,
-        "address": "123 Main St"
+      {     
+         "apartment_number": 114,
+         "price": 500000,
+         "rooms": 4,
+         "house_id": 1
       }
 
 
